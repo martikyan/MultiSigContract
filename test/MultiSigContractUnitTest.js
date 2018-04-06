@@ -3,7 +3,7 @@ var assertEx = require("./utility/assertExtensions.js");
 
 initialWalletBalance = 1000000;
 
-contract("MultiSigContract", function(accounts) {
+contract("MultiSigContract", function (accounts) {
 	addressArray = []
 	addressArray.push(accounts[0]);
 	addressArray.push(accounts[1]);
@@ -13,7 +13,7 @@ contract("MultiSigContract", function(accounts) {
 	const randomAccount = accounts[5];
 	const lastSigner = accounts[4];
 	addressArray.push(lastSigner);
-	
+
 	beforeEach("deploy the contract", async () => {
 		multiSigContract = await MultiSigContract.new(addressArray, {
 			from: lastSigner
@@ -41,7 +41,7 @@ contract("MultiSigContract", function(accounts) {
 		});
 	});
 
-	it("should have correct fields after initializing", async function() {
+	it("should have correct fields after initializing", async function () {
 		// Act & Assert
 		assert.equal(0, await multiSigContract.nonce());
 		assert.equal(false, await multiSigContract.isOwner(randomAccount));
@@ -51,7 +51,7 @@ contract("MultiSigContract", function(accounts) {
 		assert.equal(addressArray[4], await multiSigContract.ownersArr(4));
 	});
 
-	it("should accept ether transfer to itself", async function() {
+	it("should accept ether transfer to itself", async function () {
 		// Act
 		await multiSigContract.sendTransaction({
 			value: 100,
@@ -65,9 +65,9 @@ contract("MultiSigContract", function(accounts) {
 		assert.equal(150, await web3.eth.getBalance(multiSigContract.address));
 	});
 
-	it("should not allow to transfer ether to destination if the transaction is not valid", async function() {});
+	it("should not allow to transfer ether to destination if the transaction is not valid", async function () {});
 
-	it("should allow to transfer ether to destination if the transaction is valid", async function() {
+	it("should allow to transfer ether to destination if the transaction is valid", async function () {
 		// Arrange
 		destination = randomAccount;
 		value = 500;
@@ -89,15 +89,15 @@ contract("MultiSigContract", function(accounts) {
 		signedData += nonce.toString(16);
 		signedData = web3.sha3(signedData, 'hex');
 
-		
-		for(i = 0; i < 4; i++) {
+
+		for (i = 0; i < 4; i++) {
 			signedData = web3.eth.sign(addressArray[0], signedData).slice(2);
-			sigR.push('0x' + signedData.slice(0,64));
-			sigS.push('0x' + signedData.slice(64,128));
-			numSigV = parseInt(signedData.slice(128,130))
+			sigR.push('0x' + signedData.slice(0, 64));
+			sigS.push('0x' + signedData.slice(64, 128));
+			numSigV = parseInt(signedData.slice(128, 130))
 			numSigV += 27
 			sigV.push(numSigV);
-			console.log('sigv is ' + numSigV); 
+			console.log('sigv is ' + numSigV);
 		}
 
 		console.log(destination + ' is the desti');
@@ -106,6 +106,8 @@ contract("MultiSigContract", function(accounts) {
 		console.log(sigR + ' is the sigR');
 		console.log(sigS + ' is the sigS');
 		console.log('balance of the contract is ' + web3.eth.getBalance(multiSigContract.address))
-		await multiSigContract.execute(destination, value, sigV, sigR, sigS, {from: addressArray[4]});
+		await multiSigContract.execute(destination, value, sigV, sigR, sigS, {
+			from: addressArray[4]
+		});
 	});
 });
