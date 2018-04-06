@@ -12,21 +12,20 @@ contract MultiSigContract {
         }
     }
 
-    function execute(address destination, uint value, uint wdwid, uint8[] sigV, bytes32[] sigR, bytes32[] sigS) public {
+    function execute(address destination, uint amount, uint wdwId, uint8[] sigV, bytes32[] sigR, bytes32[] sigS) public returns (address) {
         require(sigR.length == sigS.length && sigR.length == sigV.length);
         require(sigR.length == ownersArr.length - 1);
         require(msg.sender == ownersArr[ownersArr.length - 1]);
-        require(withdrawIDs[wdwid] == false);
+        require(withdrawIDs[wdwId] == false);
 
-        bytes32 txHash = keccak256(byte(0x19), byte(0), this, destination, value, wdwid);
+        bytes32 txHash = keccak256("\x19Ethereum Signed Message:\n104", this, destination, amount, wdwId);
 
-        for (uint i = 0; i < ownersArr.length - 1; i++) {
+        for(uint8 i = 0; i < ownersArr.length - 1; i++) {
             address recovered = ecrecover(txHash, sigV[i], sigR[i], sigS[i]);
             require(isOwner[recovered] == true);
         }
-    
-        withdrawIDs[wdwid] = true;
-        destination.transfer(value);
+        withdrawIDs[wdwId] = true;
+        destination.transfer(amount);
     }
   
     function () public payable {}
