@@ -25,23 +25,22 @@ contract("MultiSigContract", function (accounts) {
 		multiSigContract = await MultiSigContract.new(addressArray, {
 			from: lastSigner
 		});
-
-		web3.eth.sendTransaction({
+		await web3.eth.sendTransaction({
 			from: randomAccount,
 			to: addressArray[0],
 			value: initialWalletBalance
 		});
-		web3.eth.sendTransaction({
+		await web3.eth.sendTransaction({
 			from: randomAccount,
 			to: addressArray[1],
 			value: initialWalletBalance
 		});
-		web3.eth.sendTransaction({
+		await web3.eth.sendTransaction({
 			from: randomAccount,
 			to: addressArray[2],
 			value: initialWalletBalance
 		});
-		web3.eth.sendTransaction({
+		await web3.eth.sendTransaction({
 			from: randomAccount,
 			to: addressArray[3],
 			value: initialWalletBalance
@@ -72,10 +71,6 @@ contract("MultiSigContract", function (accounts) {
 	});
 
 	it("should not allow to transfer ether to destination if the transaction is not valid", async function () {
-		// TBD
-	});
-
-	it("should allow to transfer ether to destination if the transaction is valid", async function () {
 		// Arrange
 		destination = randomAccount;
 		var amount = 42;
@@ -85,10 +80,9 @@ contract("MultiSigContract", function (accounts) {
 			value: amount + 20000,
 			from: randomAccount
 		});
-		destinationInitialBalance = web3.eth.getBalance(multiSigContract.address);
 		// Act
 
-		var hexMessageToSign = multiSigContract.address + randomAccount.slice(2) + getAsUInt32StringHex(amount) + getAsUInt32StringHex(wdwId);
+		var hexMessageToSign = multiSigContract.address + destination.slice(2) + getAsUInt32StringHex(amount) + getAsUInt32StringHex(wdwId);
 		sigR = [];
 		sigS = [];
 		sigV = [];
@@ -102,7 +96,49 @@ contract("MultiSigContract", function (accounts) {
 			sigV.push(numSigV);
 		}
 
-		await multiSigContract.execute(randomAccount, amount, wdwId, sigV, sigR, sigS, {
+		// Assert
+		assertEx.isReverted(async () => await multiSigContract.execute("0x0", amount, wdwId, sigV, sigR, sigS, {
+			from: addressArray[4]
+		}));
+		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount - 1, wdwId, sigV, sigR, sigS, {
+			from: addressArray[4]
+		}));
+		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount, wdwId + 1, sigV, sigR, sigS, {
+			from: addressArray[4]
+		}));
+		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount, wdwId, sigV, sigR, sigS, {
+			from: addressArray[0]
+		}));
+	});
+
+	it("should allow to transfer ether to destination if the transaction is valid", async function () {
+		// Arrange
+		destination = randomAccount;
+		var amount = 42;
+		var wdwId = 0;
+
+		await multiSigContract.sendTransaction({
+			value: amount + 20000,
+			from: randomAccount
+		});
+		// Act
+
+		var hexMessageToSign = multiSigContract.address + destination.slice(2) + getAsUInt32StringHex(amount) + getAsUInt32StringHex(wdwId);
+		sigR = [];
+		sigS = [];
+		sigV = [];
+
+		for (let i = 0; i < 4; i++) {
+			signedData = web3.eth.sign(addressArray[i], hexMessageToSign).slice(2);
+			sigR.push('0x' + signedData.slice(0, 64));
+			sigS.push('0x' + signedData.slice(64, 128));
+			numSigV = parseInt(signedData.slice(128, 130))
+			numSigV += 27
+			sigV.push(numSigV);
+		}
+
+		// Assert
+		await multiSigContract.execute(destination, amount, wdwId, sigV, sigR, sigS, {
 			from: addressArray[4]
 		});
 	});
