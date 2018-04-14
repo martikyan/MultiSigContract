@@ -18,42 +18,20 @@ contract("MultiSigContract", function (accounts) {
 	addressArray.push(accounts[3]);
 
 	const randomAccount = accounts[5];
-	const lastSigner = accounts[4];
-	addressArray.push(lastSigner);
+	const Executer = accounts[4];
 
 	beforeEach("deploy the contract", async () => {
-		multiSigContract = await MultiSigContract.new(addressArray, {
-			from: lastSigner
-		});
-		await web3.eth.sendTransaction({
-			from: randomAccount,
-			to: addressArray[0],
-			value: initialWalletBalance
-		});
-		await web3.eth.sendTransaction({
-			from: randomAccount,
-			to: addressArray[1],
-			value: initialWalletBalance
-		});
-		await web3.eth.sendTransaction({
-			from: randomAccount,
-			to: addressArray[2],
-			value: initialWalletBalance
-		});
-		await web3.eth.sendTransaction({
-			from: randomAccount,
-			to: addressArray[3],
-			value: initialWalletBalance
+		multiSigContract = await MultiSigContract.new(addressArray, Executer, {
+			from: randomAccount
 		});
 	});
 
 	it("should have correct fields after initializing", async function () {
 		// Act & Assert
-		assert.equal(false, await multiSigContract.isOwner(randomAccount));
-		assert.equal(true, await multiSigContract.isOwner(addressArray[0]));
-		assert.equal(true, await multiSigContract.isOwner(addressArray[4]));
-		assert.equal(addressArray[0], await multiSigContract.ownersArr(0));
-		assert.equal(addressArray[4], await multiSigContract.ownersArr(4));
+		assert.equal(false, await multiSigContract.IsSigner(randomAccount));
+		assert.equal(true, await multiSigContract.IsSigner(addressArray[0]));
+		assert.equal(false, await multiSigContract.IsSigner(Executer));
+		assert.equal(addressArray[0], await multiSigContract.Signers(0));
 	});
 
 	it("should accept ether transfer to itself", async function () {
@@ -64,7 +42,7 @@ contract("MultiSigContract", function (accounts) {
 		});
 		await multiSigContract.sendTransaction({
 			value: 50,
-			from: addressArray[4]
+			from: Executer
 		});
 		// Assert
 		assert.equal(150, await web3.eth.getBalance(multiSigContract.address));
@@ -81,7 +59,6 @@ contract("MultiSigContract", function (accounts) {
 			from: randomAccount
 		});
 		// Act
-
 		var hexMessageToSign = multiSigContract.address + destination.slice(2) + getAsUInt32StringHex(amount) + getAsUInt32StringHex(wdwId);
 		sigR = [];
 		sigS = [];
@@ -98,13 +75,13 @@ contract("MultiSigContract", function (accounts) {
 
 		// Assert
 		assertEx.isReverted(async () => await multiSigContract.execute("0x0", amount, wdwId, sigV, sigR, sigS, {
-			from: addressArray[4]
+			from: Executer
 		}));
 		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount - 1, wdwId, sigV, sigR, sigS, {
-			from: addressArray[4]
+			from: Executer
 		}));
 		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount, wdwId + 1, sigV, sigR, sigS, {
-			from: addressArray[4]
+			from: Executer
 		}));
 		assertEx.isReverted(async () => await multiSigContract.execute(destination, amount, wdwId, sigV, sigR, sigS, {
 			from: addressArray[0]
@@ -122,7 +99,6 @@ contract("MultiSigContract", function (accounts) {
 			from: randomAccount
 		});
 		// Act
-
 		var hexMessageToSign = multiSigContract.address + destination.slice(2) + getAsUInt32StringHex(amount) + getAsUInt32StringHex(wdwId);
 		sigR = [];
 		sigS = [];
@@ -136,10 +112,9 @@ contract("MultiSigContract", function (accounts) {
 			numSigV += 27
 			sigV.push(numSigV);
 		}
-
 		// Assert
 		await multiSigContract.execute(destination, amount, wdwId, sigV, sigR, sigS, {
-			from: addressArray[4]
+			from: Executer
 		});
 	});
 });

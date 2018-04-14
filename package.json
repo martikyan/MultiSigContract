@@ -12,7 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ethereumjs-tx": "*",
-    "ethereumjs-wallet": "*"
+    "truffle": "",
+    "ganache-cli": "",
+    "run-with-ganache": ""
   }
 }
